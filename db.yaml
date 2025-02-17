@@ -1,0 +1,44 @@
+- name : configuration for the db server 
+  hosts: db
+  become: yes
+  vars:
+   login_host: db.vijayonline
+  vars_prompt:
+    - name: my_sql_password
+      prompt: Please enter the db password
+      private: no
+  tasks:
+   - name: Installing the mysql 
+     ansible.builtin.dnf:
+      name: mysql-server
+      state: latest 
+  - name: Installing the mysql 
+    ansible.builtin.dnf:
+      name: mysqld
+      state: started
+      enabled: yes
+  - name: installing the python dependencies
+    ansible.builtin.pip:
+      name:
+      - PyMySQL
+      - cryptography
+      executable: pip3.9 # pip3.11 if python version is 3.11
+  - name: checking whether the connection is established or not
+    community.mysql.mysql_info:
+      login_user: root
+      login_password: {{ my_sql_password }}
+      login_host: {{ login_host }}
+      filter: version
+    ignore_errors: yes
+    register: my_sql_output
+      
+ - name: printing the above output 
+   ansible.builtin.debug:
+    msg: " Output: {{ my_sql_output }} "
+ - name: setup root password 
+    ansible.builtin.command: "mysql_secure_installation --set-root-pass {{ my_sql_password }}"
+    when: my_sql_output.failed is true 
+        
+
+        
+        
